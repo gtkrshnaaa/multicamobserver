@@ -125,3 +125,45 @@ func TestBroadcasterModelAuthentication(t *testing.T) {
 		t.Errorf("Expected correct password verification to succeed")
 	}
 }
+
+// TestUpdateUser verifies that UpdateUser database helper successfully modifies admin account parameters
+func TestUpdateUser(t *testing.T) {
+	db := setupTestDB(t)
+	if db == nil {
+		return
+	}
+	defer db.Close()
+
+	// Insert temporary admin
+	var id int
+	err := db.QueryRow("INSERT INTO users (email, password_hash) VALUES ('old-admin@multicamobserver.com', 'dummy') RETURNING id").Scan(&id)
+	if err != nil {
+		t.Fatalf("Failed to insert mock admin: %v", err)
+	}
+	defer func() {
+		_, _ = db.Exec("DELETE FROM users WHERE id = $1", id)
+	}()
+
+	// 1. Update email and password
+	newEmail := "updated-admin@multicamobserver.com"
+	newPassword := "NewAdminPassword2026!"
+	err = models.UpdateUser(db, id, newEmail, newPassword)
+	if err != nil {
+		t.Fatalf("Failed to update user: %v", err)
+	}
+
+	// 2. Fetch updated user and check credentials
+	u, err := models.GetUserByEmail(db, newEmail)
+	if err != nil {
+		t.Fatalf("Failed to retrieve updated user: %v", err)
+	}
+
+	if u.Email != newEmail {
+		t.Errorf("Expected email to be %s, got: %s", newEmail, u.Email)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(newPassword))
+	if err != nil {
+		t.Errorf("Expected updated password verification to succeed: %v", err)
+	}
+}

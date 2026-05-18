@@ -37,3 +37,18 @@ func AuthenticateUser(db *sql.DB, email, password string) (*User, error) {
 
 	return u, nil
 }
+
+// UpdateUser modifies an administrator's email/username and optionally their password hash
+func UpdateUser(db *sql.DB, id int, email, plainPassword string) error {
+	if plainPassword != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		_, err = db.Exec("UPDATE users SET email = $1, password_hash = $2 WHERE id = $3", email, string(hashed), id)
+		return err
+	}
+
+	_, err := db.Exec("UPDATE users SET email = $1 WHERE id = $2", email, id)
+	return err
+}
