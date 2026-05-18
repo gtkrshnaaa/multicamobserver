@@ -90,6 +90,8 @@ done
 
 if [ $COUNT -eq $MAX_RETRIES ]; then
     echo "❌ Timeout: Web HTTP server failed to answer healthcheck."
+    echo "🔍 Printing web container startup logs for diagnosis:"
+    docker compose logs web
     exit 1
 fi
 
