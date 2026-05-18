@@ -269,7 +269,7 @@ main {
 
 .cam-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
     gap: 2rem;
 }
 
@@ -472,4 +472,93 @@ footer {
     color: #000000;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
+}
+
+/* Responsive Management Layout Grid */
+.admin-management-layout {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 4rem;
+}
+
+.admin-col-right {
+    border-left: 1px solid #1a1a1a;
+    padding-left: 4rem;
+}
+
+.admin-danger-right {
+    border-left: 1px solid #2a1111;
+    padding-left: 4rem;
+}
+
+.admin-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.nav-session-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Global Responsiveness and Breakpoint System */
+@media (max-width: 1200px) {
+    .admin-management-layout {
+        gap: 2.5rem;
+    }
+    .admin-col-right, .admin-danger-right {
+        padding-left: 2.5rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .admin-management-layout {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+    }
+    .admin-col-right {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid #1a1a1a;
+        padding-top: 2rem;
+    }
+    .admin-danger-right {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid #2a1111;
+        padding-top: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    main {
+        padding: 1.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    header {
+        padding: 0.8rem 1rem !important;
+    }
+    .logo span {
+        font-size: 1.2rem;
+    }
+    .nav-links {
+        gap: 0.75rem !important;
+    }
+    .nav-session-label {
+        display: none; /* Save space on mobile */
+    }
+    .card {
+        padding: 1.25rem !important;
+    }
+    .admin-fields-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+    .auth-wrapper {
+        padding: 1rem;
+        min-height: 80vh;
+    }
 }
