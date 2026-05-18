@@ -139,7 +139,7 @@
                     video: {
                         width: { ideal: 640 },
                         height: { ideal: 360 },
-                        frameRate: { ideal: 15 }
+                        frameRate: { ideal: 5 }
                     },
                     audio: false
                 };
@@ -157,7 +157,7 @@
                     const h = video.videoHeight;
                     canvas.width = w;
                     canvas.height = h;
-                    resolutionStatsEl.innerText = `${w}x${h} @ 15fps`;
+                    resolutionStatsEl.innerText = `${w}x${h} @ 5fps`;
                 };
 
                 // Smart Mirroring Logic: Mirror front camera, do NOT mirror back/rear camera
@@ -241,8 +241,8 @@
                 statusBadge.innerText = "Broadcasting";
                 statusBadge.className = "badge badge-online";
 
-                // Start transmission loop at 12 fps
-                sendIntervalID = setInterval(sendFrame, 1000 / 12);
+                // Start transmission loop at 5 fps (extremely optimized for server & bandwidth)
+                sendIntervalID = setInterval(sendFrame, 1000 / 5);
             };
 
             ws.onclose = () => {
@@ -297,7 +297,7 @@
                         lastTelemetryTime = now;
                     }
                 }
-            }, 'image/jpeg', 0.55);
+            }, 'image/jpeg', 0.25);
         }
 
         // 4. Screensaver / OLED burn-in prevention logic
