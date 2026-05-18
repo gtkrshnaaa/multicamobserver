@@ -124,3 +124,19 @@ function stopBackgroundKeepAlive() {
     console.log('⚡ Background audio keep-alive deactivated.');
   }
 }
+
+// Enforce hiding PWA install buttons if PWA is already installed or launched inside standalone app mode
+function enforceStandaloneUI() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) {
+    console.log('⚡ Active Session: MulticamObserver PWA (Standalone). Hiding install options.');
+    const installButtons = document.querySelectorAll('.pwa-install-btn');
+    installButtons.forEach(btn => {
+      btn.style.setProperty('display', 'none', 'important');
+    });
+  }
+}
+
+// Run checks on DOMContentLoaded and immediate load
+window.addEventListener('DOMContentLoaded', enforceStandaloneUI);
+enforceStandaloneUI();

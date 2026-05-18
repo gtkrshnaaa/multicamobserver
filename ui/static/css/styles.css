@@ -627,3 +627,10 @@ footer {
         font-size: 1rem !important;
     }
 }
+
+/* Automatically hide install triggers when launched as standalone PWA app */
+@media (display-mode: standalone) {
+    .pwa-install-btn {
+        display: none !important;
+    }
+}
