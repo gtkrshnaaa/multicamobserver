@@ -260,11 +260,13 @@ main {
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
+    word-break: break-word;
 }
 
 .dashboard-subtitle {
     color: var(--text-muted);
     margin-bottom: 2rem;
+    word-break: break-all;
 }
 
 .cam-grid {
@@ -481,6 +483,11 @@ footer {
     gap: 4rem;
 }
 
+.admin-management-layout > div {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .admin-col-right {
     border-left: 1px solid #1a1a1a;
     padding-left: 4rem;
@@ -581,21 +588,21 @@ footer {
         font-size: 0.8rem !important;
         line-height: 1.3;
     }
-    .pwa-install-btn .btn-text,
-    .btn-danger .btn-text,
-    .btn-secondary .btn-text {
+    header .nav-links .pwa-install-btn .btn-text,
+    header .nav-links .btn-danger .btn-text,
+    header .nav-links .btn-secondary .btn-text {
         display: none !important;
     }
-    .pwa-install-btn svg,
-    .btn-danger svg,
-    .btn-secondary svg {
+    header .nav-links .pwa-install-btn svg,
+    header .nav-links .btn-danger svg,
+    header .nav-links .btn-secondary svg {
         margin-right: 0 !important;
         width: 15px;
         height: 15px;
     }
-    .pwa-install-btn,
-    .btn-danger,
-    .btn-secondary {
+    header .nav-links .pwa-install-btn,
+    header .nav-links .btn-danger,
+    header .nav-links .btn-secondary {
         padding: 0 !important;
         border-radius: 50% !important;
         width: 34px !important;
@@ -604,6 +611,10 @@ footer {
         justify-content: center !important;
         display: inline-flex !important;
         align-items: center !important;
+    }
+    #editModal .card {
+        padding: 1.25rem !important;
+        margin: 0.75rem !important;
     }
     .logo span {
         max-width: 140px;
