@@ -17,9 +17,9 @@ git reset --hard HEAD
 echo "📥 Pulling latest changes from branch main..."
 git pull origin main
 
-# 3. Take down current containers
-echo "🐳 Stopping current containers..."
-docker compose down
+# 3. Take down current containers and clear volumes
+echo "🐳 Stopping current containers and clearing old volumes..."
+docker compose down -v
 
 # 4. Run the standard deployment
 echo "🚀 Running deployment script..."
