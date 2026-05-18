@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - MulticamObserver</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="shortcut icon" href="https://img.icons8.com/isometric-line/512/cctv-camera.png" type="image/png">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="/admin/dashboard" class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1;">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                <span>MulticamObserver</span>
+            </a>
+            <div class="nav-links">
+                <span style="font-size: 0.9rem; color: var(--text-muted);">Admin Session</span>
+                <a href="/logout" class="btn btn-danger">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div style="margin-bottom: 2rem;">
+            <h1 class="dashboard-title">Central Monitoring Console</h1>
+            <p class="dashboard-subtitle">Real-time lightweight privacy-first visual surveillance stream</p>
+        </div>
+
+        <div class="cam-grid">
+            {{range .Cameras}}
+            <div class="card cam-card" id="card-{{.NodeID}}">
+                <div class="cam-header">
+                    <div class="cam-name">{{.Name}}</div>
+                    {{if .IsOnline}}
+                    <span class="badge badge-online">Live</span>
+                    {{else}}
+                    <span class="badge badge-offline">Offline</span>
+                    {{end}}
+                </div>
+                
+                <div class="cam-body">
+                    {{if .IsOnline}}
+                    <!-- Dynamic live feed source updated via WebSocket -->
+                    <img class="cam-feed" id="feed-{{.NodeID}}" src="" alt="Live feed loading...">
+                    {{else}}
+                    <!-- Offline placeholder graphics -->
+                    <div class="cam-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M2 2l20 20M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2m4-3h6l2 3h4a2 2 0 0 1 2 2v3"></path>
+                            <circle cx="12" cy="13" r="4" style="opacity: 0.5;"></circle>
+                        </svg>
+                        <p style="font-size: 0.95rem; margin-top: 0.5rem;">Camera Node is Offline</p>
+                    </div>
+                    {{end}}
+                </div>
+
+                <div class="cam-footer">
+                    <div class="cam-stats" id="stats-{{.NodeID}}">
+                        ID: <code style="color: var(--primary);">{{.NodeID}}</code>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-dark);">
+                        {{if .IsOnline}}
+                        Active Viewers: <span style="color: var(--success); font-weight: 600;">{{.ViewerCount}}</span>
+                        {{else}}
+                        Standby Mode
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+            {{else}}
+            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 1rem;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <h3>No Camera Nodes Registered</h3>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem;">Register new broadcaster nodes in the database to start monitoring.</p>
+            </div>
+            {{end}}
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 MulticamObserver &bull; Decentralized Personal Security Ecosystem</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // WebSocket live receiver logic for online cameras
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+
+        {{range .Cameras}}
+        {{if .IsOnline}}
+        (function() {
+            const nodeID = "{{.NodeID}}";
+            const imgElement = document.getElementById(`feed-${nodeID}`);
+            const socketURL = `${protocol}//${host}/ws?node_id=${nodeID}&role=viewer`;
+            
+            let ws;
+            let reconnectInterval = 2000;
+
+            function connect() {
+                console.log(`Connecting to camera stream socket: ${nodeID}`);
+                ws = new WebSocket(socketURL);
+                ws.binaryType = 'blob';
+
+                ws.onmessage = (event) => {
+                    if (event.data instanceof Blob) {
+                        const oldURL = imgElement.src;
+                        imgElement.src = URL.createObjectURL(event.data);
+                        
+                        // Clean up old object URLs to prevent memory leakage
+                        if (oldURL && oldURL.startsWith('blob:')) {
+                            URL.revokeObjectURL(oldURL);
+                        }
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log(`Stream socket closed for: ${nodeID}. Reconnecting...`);
+                    // Simple reconnect mechanism
+                    setTimeout(connect, reconnectInterval);
+                };
+
+                ws.onerror = (err) => {
+                    console.error(`Stream socket error for: ${nodeID}`, err);
+                    ws.close();
+                };
+            }
+
+            connect();
+        })();
+        {{end}}
+        {{end}}
+    </script>
+</body>
+</html>

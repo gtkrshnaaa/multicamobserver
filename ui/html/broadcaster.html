@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broadcaster - MulticamObserver</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="shortcut icon" href="https://img.icons8.com/isometric-line/512/cctv-camera.png" type="image/png">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="/login" class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #6366f1;">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                <span>MulticamObserver</span>
+            </a>
+            <div class="nav-links">
+                <span class="badge badge-offline" id="statusBadge">Inactive</span>
+                <a href="/logout" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Exit Node</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div style="margin-bottom: 2rem;">
+            <h1 class="dashboard-title" style="font-size: 1.75rem;">Broadcaster Node Console</h1>
+            <p class="dashboard-subtitle">Active Device: <span style="color: var(--primary); font-weight: 600;">{{.Name}} ({{.NodeID}})</span></p>
+        </div>
+
+        <div class="broadcaster-layout">
+            <!-- Camera Video Feed Card -->
+            <div class="card" style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+                <div class="video-container">
+                    <video id="localVideo" autoplay playsinline muted></video>
+                    
+                    <!-- OLED Saver Black Screen Overlay -->
+                    <div class="screensaver-overlay" id="screensaverOverlay">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.5" style="animation: breathing 2s infinite ease-in-out;">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <div class="screensaver-title">Screensaver Engaged (Tap to Wake)</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button class="btn btn-secondary" id="toggleScreensaver">
+                        Toggle Screensaver
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls & Statistics Sidebar -->
+            <div class="card" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">Node Telemetry</h3>
+                
+                <div>
+                    <span class="form-label">Signaling Gateway</span>
+                    <div style="font-size: 0.95rem; font-family: monospace; word-break: break-all; color: var(--text-muted);" id="gatewayUrl"></div>
+                </div>
+
+                <div>
+                    <span class="form-label">Transmission Quality</span>
+                    <div style="font-size: 1.15rem; font-weight: 600;" id="frameStats">0 fps / 0 KB/s</div>
+                </div>
+
+                <div>
+                    <span class="form-label">Resolution & Aspect</span>
+                    <div style="font-size: 0.95rem; color: var(--text-muted);" id="resolutionStats">Determining camera source...</div>
+                </div>
+
+                <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <p style="font-size: 0.8rem; color: var(--text-dark); line-height: 1.4;">
+                        💡 <b>Pro-Tip:</b> Screensaver mode will engage automatically after 5 seconds of inactivity to save battery power and prevent AMOLED screen burn-in.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 MulticamObserver &bull; Decentralized Personal Security Ecosystem</p>
+    </footer>
+
+    <!-- Canvas for frame compression (hidden from DOM) -->
+    <canvas id="offscreenCanvas" width="640" height="360" style="display: none;"></canvas>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        const nodeID = "{{.NodeID}}";
+        const video = document.getElementById('localVideo');
+        const canvas = document.getElementById('offscreenCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusBadge = document.getElementById('statusBadge');
+        const gatewayUrlEl = document.getElementById('gatewayUrl');
+        const frameStatsEl = document.getElementById('frameStats');
+        const resolutionStatsEl = document.getElementById('resolutionStats');
+        const screensaverOverlay = document.getElementById('screensaverOverlay');
+        const toggleScreensaverBtn = document.getElementById('toggleScreensaver');
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        const socketURL = `${protocol}//${host}/ws?node_id=${nodeID}&role=broadcaster`;
+        
+        gatewayUrlEl.innerText = socketURL;
+
+        let ws;
+        let localStream;
+        let isConnected = false;
+        let sendIntervalID;
+        let reconnectDelay = 1000;
+        const maxReconnectDelay = 16000;
+
+        // Telemetry tracking variables
+        let framesSent = 0;
+        let bytesSent = 0;
+        let lastTelemetryTime = Date.now();
+
+        // 1. Initialize user camera feed
+        async function startCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 360 },
+                        frameRate: { ideal: 15 }
+                    },
+                    audio: false
+                });
+                
+                video.srcObject = localStream;
+                resolutionStatsEl.innerText = "640x360 @ 15fps (Ideal)";
+                
+                // Once stream starts, initiate signaling handshake
+                connectWebSocket();
+            } catch (err) {
+                console.error("Camera acquisition failed: ", err);
+                statusBadge.innerText = "No Camera";
+                statusBadge.className = "badge badge-offline";
+                resolutionStatsEl.innerHTML = `<span style="color: var(--error);">Camera permission denied or not found.</span>`;
+            }
+        }
+
+        // 2. Connect to the WebSocket signaling hub
+        function connectWebSocket() {
+            console.log("Initiating connection to signaling gateway...");
+            ws = new WebSocket(socketURL);
+
+            ws.onopen = () => {
+                console.log("WebSocket handshake established!");
+                isConnected = true;
+                reconnectDelay = 1000; // Reset backoff
+                
+                statusBadge.innerText = "Broadcasting";
+                statusBadge.className = "badge badge-online";
+
+                // Start transmission loop at 12 fps
+                sendIntervalID = setInterval(sendFrame, 1000 / 12);
+            };
+
+            ws.onclose = () => {
+                console.log("WebSocket connection lost.");
+                cleanupTransmission();
+                
+                statusBadge.innerText = "Reconnecting";
+                statusBadge.className = "badge badge-offline";
+                
+                // Exponential backoff reconnect
+                setTimeout(connectWebSocket, reconnectDelay);
+                reconnectDelay = Math.min(reconnectDelay * 2, maxReconnectDelay);
+            };
+
+            ws.onerror = (err) => {
+                console.error("WebSocket socket error: ", err);
+                ws.close();
+            };
+        }
+
+        function cleanupTransmission() {
+            isConnected = false;
+            if (sendIntervalID) {
+                clearInterval(sendIntervalID);
+            }
+        }
+
+        // 3. Compress current video frame to JPEG and push binary payload
+        function sendFrame() {
+            if (!isConnected || video.paused || video.ended) return;
+
+            // Draw current video state to offscreen canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Compress to JPEG blob at 0.55 quality
+            canvas.toBlob((blob) => {
+                if (blob && isConnected) {
+                    ws.send(blob);
+                    framesSent++;
+                    bytesSent += blob.size;
+                    
+                    // Update telemetry metrics every 2 seconds
+                    const now = Date.now();
+                    const diff = now - lastTelemetryTime;
+                    if (diff >= 2000) {
+                        const fps = ((framesSent / diff) * 1000).toFixed(1);
+                        const kbps = (((bytesSent / diff) * 1000) / 1024).toFixed(1);
+                        frameStatsEl.innerText = `${fps} fps / ${kbps} KB/s`;
+                        
+                        framesSent = 0;
+                        bytesSent = 0;
+                        lastTelemetryTime = now;
+                    }
+                }
+            }, 'image/jpeg', 0.55);
+        }
+
+        // 4. Screensaver / OLED burn-in prevention logic
+        let screensaverTimer;
+        
+        function resetScreensaverTimer() {
+            clearTimeout(screensaverTimer);
+            // Auto screensaver after 5 seconds of idle
+            screensaverTimer = setTimeout(engageScreensaver, 5000);
+        }
+
+        function engageScreensaver() {
+            screensaverOverlay.classList.add('active');
+            video.style.opacity = "0.05"; // Dim video slightly
+        }
+
+        function wakeScreensaver() {
+            screensaverOverlay.classList.remove('active');
+            video.style.opacity = "1";
+            resetScreensaverTimer();
+        }
+
+        // User events to wake screensaver
+        document.addEventListener('mousemove', resetScreensaverTimer);
+        document.addEventListener('keypress', resetScreensaverTimer);
+        document.addEventListener('click', resetScreensaverTimer);
+        screensaverOverlay.addEventListener('click', (e) => {
+            e.stopPropagation();
+            wakeScreensaver();
+        });
+
+        toggleScreensaverBtn.addEventListener('click', () => {
+            if (screensaverOverlay.classList.contains('active')) {
+                wakeScreensaver();
+            } else {
+                engageScreensaver();
+            }
+        });
+
+        // Initialize node
+        startCamera();
+        resetScreensaverTimer();
+    </script>
+</body>
+</html>
