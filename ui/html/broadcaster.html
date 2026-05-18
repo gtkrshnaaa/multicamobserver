@@ -19,6 +19,7 @@
                 <span>MulticamObserver</span>
             </a>
             <div class="nav-links">
+                <button class="btn btn-primary pwa-install-btn" onclick="triggerPWAInstallation()" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Install App</button>
                 <span class="badge badge-offline" id="statusBadge">Inactive</span>
                 <a href="/logout" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Exit Node</a>
             </div>
@@ -47,8 +48,11 @@
                     </div>
                 </div>
                 
-                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                    <button class="btn btn-secondary" id="toggleScreensaver">
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+                    <!-- Camera switching control (shown only if multiple sources detected) -->
+                    <select class="form-select" id="cameraSelect" style="width: auto; padding: 0.4rem 2rem 0.4rem 1rem; font-size: 0.85rem; border-radius: 6px; display: none; height: 35px;"></select>
+                    
+                    <button class="btn btn-secondary" id="toggleScreensaver" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                         Toggle Screensaver
                     </button>
                 </div>
@@ -120,23 +124,64 @@
         let bytesSent = 0;
         let lastTelemetryTime = Date.now();
 
-        // 1. Initialize user camera feed
-        async function startCamera() {
+        const cameraSelect = document.getElementById('cameraSelect');
+        let currentDeviceId = null;
+
+        // 1. Initialize user camera feed (with optional device switching)
+        async function startCamera(deviceId = null) {
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({
+                // If switching cameras, stop all active tracks first
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
+
+                const constraints = {
                     video: {
                         width: { ideal: 640 },
                         height: { ideal: 360 },
                         frameRate: { ideal: 15 }
                     },
                     audio: false
-                });
-                
+                };
+
+                if (deviceId) {
+                    constraints.video.deviceId = { exact: deviceId };
+                }
+
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = localStream;
-                resolutionStatsEl.innerText = "640x360 @ 15fps (Ideal)";
                 
-                // Once stream starts, initiate signaling handshake
-                connectWebSocket();
+                // Dynamic Aspect Ratio and Canvas adaptation based on active feed
+                video.onloadedmetadata = () => {
+                    const w = video.videoWidth;
+                    const h = video.videoHeight;
+                    canvas.width = w;
+                    canvas.height = h;
+                    resolutionStatsEl.innerText = `${w}x${h} @ 15fps`;
+                };
+
+                // Smart Mirroring Logic: Mirror front camera, do NOT mirror back/rear camera
+                const activeTrack = localStream.getVideoTracks()[0];
+                const settings = activeTrack.getSettings();
+                const label = activeTrack.label ? activeTrack.label.toLowerCase() : '';
+                const isRear = settings.facingMode === 'environment' || 
+                               label.includes('back') || 
+                               label.includes('rear') || 
+                               label.includes('environment');
+                
+                if (isRear) {
+                    video.style.transform = 'scaleX(1)'; // Standard view for rear-facing cameras
+                } else {
+                    video.style.transform = 'scaleX(-1)'; // Mirrored view for user-facing cameras
+                }
+                
+                // Establish WebSocket gateway connection
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    connectWebSocket();
+                }
+
+                // Enumerate cameras for multi-device support
+                await populateCameras();
             } catch (err) {
                 console.error("Camera acquisition failed: ", err);
                 statusBadge.innerText = "No Camera";
@@ -144,6 +189,44 @@
                 resolutionStatsEl.innerHTML = `<span style="color: var(--error);">Camera permission denied or not found.</span>`;
             }
         }
+
+        // Discover and populate available video input nodes
+        async function populateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                
+                if (videoDevices.length > 1) {
+                    cameraSelect.innerHTML = '';
+                    videoDevices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.text = device.label || `Camera ${index + 1}`;
+                        
+                        // Select current active camera device
+                        const activeTrack = localStream.getVideoTracks()[0];
+                        if (activeTrack && activeTrack.label === device.label) {
+                            option.selected = true;
+                            currentDeviceId = device.deviceId;
+                        }
+                        cameraSelect.appendChild(option);
+                    });
+                    cameraSelect.style.display = 'inline-flex';
+                } else {
+                    cameraSelect.style.display = 'none';
+                }
+            } catch (err) {
+                console.warn("Failed to enumerate camera devices:", err);
+            }
+        }
+
+        // Switch source on user change selection
+        cameraSelect.addEventListener('change', (e) => {
+            const selectedDeviceId = e.target.value;
+            if (selectedDeviceId !== currentDeviceId) {
+                startCamera(selectedDeviceId);
+            }
+        });
 
         // 2. Connect to the WebSocket signaling hub
         function connectWebSocket() {
