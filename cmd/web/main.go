@@ -137,20 +137,35 @@ func main() {
 	}
 }
 
-// bootstrapDatabase runs database schema commands to initialize tables
+// bootstrapDatabase runs database schema and seeder commands to initialize tables
 func bootstrapDatabase(db *sql.DB) {
+	// 1. Run Schema Migrations (DDL)
 	schemaFile := filepath.Join("database", "schema.sql")
 	schemaBytes, err := os.ReadFile(schemaFile)
 	if err != nil {
-		log.Printf("⚠️  Warning: database schema file not found, skipping migration: %v", err)
+		log.Printf("⚠️  Warning: database schema file not found, skipping DDL migration: %v", err)
 		return
 	}
 
 	_, err = db.Exec(string(schemaBytes))
 	if err != nil {
-		log.Fatalf("❌ Fatal Error: Failed to bootstrap database schema: %v", err)
+		log.Fatalf("❌ Fatal Error: Failed to bootstrap database DDL schema: %v", err)
 	}
-	log.Println("✅ Successfully initialized database schema & seeded initial credentials.")
+	log.Println("✅ Successfully initialized database DDL schema tables.")
+
+	// 2. Run Seeder Initializer (DML)
+	seederFile := filepath.Join("database", "seeder.sql")
+	seederBytes, err := os.ReadFile(seederFile)
+	if err != nil {
+		log.Printf("⚠️  Warning: database seeder file not found, skipping DML seed: %v", err)
+		return
+	}
+
+	_, err = db.Exec(string(seederBytes))
+	if err != nil {
+		log.Fatalf("❌ Fatal Error: Failed to seed database initial records: %v", err)
+	}
+	log.Println("✅ Successfully seeded database initial credentials.")
 }
 
 // redactDBURL removes passwords from DB connection logs for security
