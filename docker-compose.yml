@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: multicam_db
+    container_name: multicamobserver_db_srv
     restart: always
     environment:
       POSTGRES_USER: multicam_user
@@ -19,7 +19,7 @@ services:
 
   web:
     build: .
-    container_name: multicam_web
+    container_name: multicamobserver_web_srv
     restart: always
     ports:
       - "51177:51177"

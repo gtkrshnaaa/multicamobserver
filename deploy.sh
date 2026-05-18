@@ -38,7 +38,7 @@ docker compose up -d --build
 # 3. Health Check - Wait for PostgreSQL DB
 # ──────────────────────────────────────────────────
 
-echo "⏳ Waiting for PostgreSQL database (multicam_db) to accept connections..."
+echo "⏳ Waiting for PostgreSQL database (multicamobserver_db_srv) to accept connections..."
 MAX_RETRIES=30
 COUNT=0
 
@@ -59,10 +59,10 @@ echo "✅ PostgreSQL is ready."
 # 4. Health Check - Wait for Go Web Server Container
 # ──────────────────────────────────────────────────
 
-echo "⏳ Waiting for Go web container (multicam_web) to be running..."
+echo "⏳ Waiting for Go web container (multicamobserver_web_srv) to be running..."
 COUNT=0
 
-until [ "$(docker inspect -f '{{.State.Running}}' multicam_web 2>/dev/null)" == "true" ] || [ $COUNT -eq $MAX_RETRIES ]; do
+until [ "$(docker inspect -f '{{.State.Running}}' multicamobserver_web_srv 2>/dev/null)" == "true" ] || [ $COUNT -eq $MAX_RETRIES ]; do
     echo "  Waiting for container... ($COUNT/$MAX_RETRIES)"
     sleep 1
     COUNT=$((COUNT + 1))
