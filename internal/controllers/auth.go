@@ -30,32 +30,36 @@ func (c *BaseController) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role := r.FormValue("role")
-	username := r.FormValue("username") // Email for admin, NodeID for broadcaster
+	if c.DB == nil {
+		c.Render(w, r, "login.html", map[string]string{"Error": "Database connection offline"})
+		return
+	}
+
+	username := r.FormValue("username")
 	password := r.FormValue("password")
 
 	var subject string
+	var role string
 	var redirectURL string
 
-	if role == "admin" {
-		user, err := models.AuthenticateUser(c.DB, username, password)
-		if err != nil {
-			c.Render(w, r, "login.html", map[string]string{"Error": "Invalid email or password"})
-			return
-		}
-		subject = user.Email
+	// 1. Try authenticating as Admin first
+	adminUser, err := models.AuthenticateUser(c.DB, username, password)
+	if err == nil {
+		subject = adminUser.Email
+		role = "admin"
 		redirectURL = "/admin/dashboard"
-	} else if role == "broadcaster" {
+	} else {
+		// 2. If admin check fails, try authenticating as Broadcaster
 		broadcaster, err := models.AuthenticateBroadcaster(c.DB, username, password)
-		if err != nil {
-			c.Render(w, r, "login.html", map[string]string{"Error": "Invalid camera node credentials"})
+		if err == nil {
+			subject = broadcaster.NodeID
+			role = "broadcaster"
+			redirectURL = "/broadcaster/camera?node_id=" + broadcaster.NodeID
+		} else {
+			// Both credentials failed
+			c.Render(w, r, "login.html", map[string]string{"Error": "Invalid username or password"})
 			return
 		}
-		subject = broadcaster.NodeID
-		redirectURL = "/broadcaster/camera?node_id=" + broadcaster.NodeID
-	} else {
-		c.Render(w, r, "login.html", map[string]string{"Error": "Invalid role selected"})
-		return
 	}
 
 	// Generate signed JWT token

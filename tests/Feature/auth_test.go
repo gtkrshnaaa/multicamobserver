@@ -1,6 +1,7 @@
 package feature_test
 
 import (
+	"database/sql"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gtkrshnaaa/multicamobserver/internal/controllers"
 	"github.com/gtkrshnaaa/multicamobserver/internal/models"
+	_ "github.com/lib/pq"
 )
 
 // setupTestController instantiates a BaseController with parsed real templates for controller tests
@@ -20,8 +22,14 @@ func setupTestController(t *testing.T) *controllers.BaseController {
 		t.Fatalf("Failed to parse real templates for feature tests: %v", err)
 	}
 
+	db, err := sql.Open("postgres", testDBURL)
+	if err != nil {
+		t.Skipf("Skipping auth feature test: cannot open connection to db: %v", err)
+		return nil
+	}
+
 	registry := models.NewStreamRegistry()
-	return controllers.NewBaseController(nil, testSecret, tmpl, registry)
+	return controllers.NewBaseController(db, testSecret, tmpl, registry)
 }
 
 // TestShowLogin validates that GET /login serves the SSR login page perfectly with HTTP 200 OK
@@ -76,15 +84,14 @@ func TestHandleLogout(t *testing.T) {
 	}
 }
 
-// TestHandleLoginValidation verifies invalid role form validation renders login with error payload
+// TestHandleLoginValidation verifies invalid credentials rendering login with error payload
 func TestHandleLoginValidation(t *testing.T) {
 	ctrl := setupTestController(t)
 
-	// Submit an invalid role to trigger dynamic template feedback
+	// Submit an invalid set of credentials
 	formData := url.Values{}
-	formData.Set("role", "invalid-role")
 	formData.Set("username", "somebody@multicamobserver.com")
-	formData.Set("password", "anypass")
+	formData.Set("password", "wrongpassword123")
 
 	req := httptest.NewRequest("POST", "/login", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -98,7 +105,7 @@ func TestHandleLoginValidation(t *testing.T) {
 	}
 
 	body := rr.Body.String()
-	if !strings.Contains(body, "Invalid role selected") {
-		t.Errorf("Expected error message 'Invalid role selected' to be rendered, got: %s", body)
+	if !strings.Contains(body, "Invalid username or password") {
+		t.Errorf("Expected error message 'Invalid username or password' to be rendered, got: %s", body)
 	}
 }
