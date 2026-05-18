@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: multicam_db
+    restart: always
+    environment:
+      POSTGRES_USER: multicam_user
+      POSTGRES_PASSWORD: multicam_secure_pass
+      POSTGRES_DB: multicamobserver
+    ports:
+      - "5432:5432"
+    volumes:
+      - multicam_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U multicam_user -d multicamobserver"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: multicam_web
+    restart: always
+    ports:
+      - "51177:51177"
+    environment:
+      PORT: 51177
+      DATABASE_URL: postgres://multicam_user:multicam_secure_pass@db:5432/multicamobserver?sslmode=disable
+      SESSION_SECRET: multicam-observer-pwa-session-secret-2026
+      ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  multicam_pgdata:
