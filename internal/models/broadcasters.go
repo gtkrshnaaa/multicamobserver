@@ -9,10 +9,10 @@ import (
 
 // GetBroadcasterByNodeID retrieves broadcaster details from PostgreSQL
 func GetBroadcasterByNodeID(db *sql.DB, nodeID string) (*Broadcaster, error) {
-	row := db.QueryRow("SELECT id, node_id, name, password_hash, created_at FROM broadcasters WHERE node_id = $1", nodeID)
+	row := db.QueryRow("SELECT id, node_id, username, name, password_hash, created_at FROM broadcasters WHERE node_id = $1", nodeID)
 
 	var b Broadcaster
-	err := row.Scan(&b.ID, &b.NodeID, &b.Name, &b.PasswordHash, &b.CreatedAt)
+	err := row.Scan(&b.ID, &b.NodeID, &b.Username, &b.Name, &b.PasswordHash, &b.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("broadcaster node not found")
@@ -23,12 +23,12 @@ func GetBroadcasterByNodeID(db *sql.DB, nodeID string) (*Broadcaster, error) {
 	return &b, nil
 }
 
-// GetBroadcasterByName retrieves broadcaster details from PostgreSQL using name/username
-func GetBroadcasterByName(db *sql.DB, name string) (*Broadcaster, error) {
-	row := db.QueryRow("SELECT id, node_id, name, password_hash, created_at FROM broadcasters WHERE name = $1", name)
+// GetBroadcasterByUsername retrieves broadcaster details from PostgreSQL using username
+func GetBroadcasterByUsername(db *sql.DB, username string) (*Broadcaster, error) {
+	row := db.QueryRow("SELECT id, node_id, username, name, password_hash, created_at FROM broadcasters WHERE username = $1", username)
 
 	var b Broadcaster
-	err := row.Scan(&b.ID, &b.NodeID, &b.Name, &b.PasswordHash, &b.CreatedAt)
+	err := row.Scan(&b.ID, &b.NodeID, &b.Username, &b.Name, &b.PasswordHash, &b.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("broadcaster node not found")
@@ -39,9 +39,9 @@ func GetBroadcasterByName(db *sql.DB, name string) (*Broadcaster, error) {
 	return &b, nil
 }
 
-// AuthenticateBroadcaster checks if camera node credentials are valid using name (username) and password
-func AuthenticateBroadcaster(db *sql.DB, name, password string) (*Broadcaster, error) {
-	b, err := GetBroadcasterByName(db, name)
+// AuthenticateBroadcaster checks if camera node credentials are valid using username and password
+func AuthenticateBroadcaster(db *sql.DB, username, password string) (*Broadcaster, error) {
+	b, err := GetBroadcasterByUsername(db, username)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func AuthenticateBroadcaster(db *sql.DB, name, password string) (*Broadcaster, e
 
 // GetAllBroadcasters retrieves all registered camera nodes in the database
 func GetAllBroadcasters(db *sql.DB) ([]*Broadcaster, error) {
-	rows, err := db.Query("SELECT id, node_id, name, created_at FROM broadcasters ORDER BY id ASC")
+	rows, err := db.Query("SELECT id, node_id, username, name, created_at FROM broadcasters ORDER BY id ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func GetAllBroadcasters(db *sql.DB) ([]*Broadcaster, error) {
 	var list []*Broadcaster
 	for rows.Next() {
 		var b Broadcaster
-		err := rows.Scan(&b.ID, &b.NodeID, &b.Name, &b.CreatedAt)
+		err := rows.Scan(&b.ID, &b.NodeID, &b.Username, &b.Name, &b.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -80,19 +80,19 @@ func GetAllBroadcasters(db *sql.DB) ([]*Broadcaster, error) {
 }
 
 // CreateBroadcaster registers a new physical camera broadcaster node securely
-func CreateBroadcaster(db *sql.DB, name, plainPassword string) (*Broadcaster, error) {
+func CreateBroadcaster(db *sql.DB, username, name, plainPassword string) (*Broadcaster, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
 	row := db.QueryRow(
-		"INSERT INTO broadcasters (name, password_hash) VALUES ($1, $2) RETURNING id, node_id, name, created_at",
-		name, string(hashed),
+		"INSERT INTO broadcasters (username, name, password_hash) VALUES ($1, $2, $3) RETURNING id, node_id, username, name, created_at",
+		username, name, string(hashed),
 	)
 
 	var b Broadcaster
-	err = row.Scan(&b.ID, &b.NodeID, &b.Name, &b.CreatedAt)
+	err = row.Scan(&b.ID, &b.NodeID, &b.Username, &b.Name, &b.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -101,20 +101,20 @@ func CreateBroadcaster(db *sql.DB, name, plainPassword string) (*Broadcaster, er
 }
 
 // UpdateBroadcaster updates camera node credentials dynamically
-func UpdateBroadcaster(db *sql.DB, id int, name, plainPassword string) error {
+func UpdateBroadcaster(db *sql.DB, id int, username, name, plainPassword string) error {
 	if plainPassword != "" {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
 		_, err = db.Exec(
-			"UPDATE broadcasters SET name = $1, password_hash = $2 WHERE id = $3",
-			name, string(hashed), id,
+			"UPDATE broadcasters SET username = $1, name = $2, password_hash = $3 WHERE id = $4",
+			username, name, string(hashed), id,
 		)
 		return err
 	}
 
-	_, err := db.Exec("UPDATE broadcasters SET name = $1 WHERE id = $2", name, id)
+	_, err := db.Exec("UPDATE broadcasters SET username = $1, name = $2 WHERE id = $3", username, name, id)
 	return err
 }
 

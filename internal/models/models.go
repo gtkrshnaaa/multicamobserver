@@ -10,6 +10,7 @@ import (
 // User represents an Administrator who can view camera feeds
 type User struct {
 	ID           int       `json:"id"`
+	Username     string    `json:"username"`
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -19,6 +20,7 @@ type User struct {
 type Broadcaster struct {
 	ID           int       `json:"id"`
 	NodeID       string    `json:"node_id"`
+	Username     string    `json:"username"`
 	Name         string    `json:"name"`
 	PasswordHash string    `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
