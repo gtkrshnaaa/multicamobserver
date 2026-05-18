@@ -58,7 +58,7 @@ func (c *BaseController) ShowDashboard(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetUserClaims(r)
 	var adminUser *models.User
 	if claims != nil {
-		adminUser, _ = models.GetUserByEmail(c.DB, claims.Subject)
+		adminUser, _ = models.GetUserByUsername(c.DB, claims.Subject)
 	}
 
 	// Extract query parameter messages for feedback popups
@@ -166,7 +166,7 @@ func (c *BaseController) PurgeBroadcasters(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, "/admin/dashboard?success=All+broadcaster+camera+nodes+successfully+purged", http.StatusSeeOther)
 }
 
-// UpdateAdminCredentials allows the logged-in administrator to modify their own email/username and password
+// UpdateAdminCredentials allows the logged-in administrator to modify their own username and password
 func (c *BaseController) UpdateAdminCredentials(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -175,24 +175,23 @@ func (c *BaseController) UpdateAdminCredentials(w http.ResponseWriter, r *http.R
 
 	idStr := r.FormValue("id")
 	username := r.FormValue("username")
-	email := r.FormValue("email")
 	password := r.FormValue("password")
 
 	var id int
 	_, err := fmt.Sscanf(idStr, "%d", &id)
-	if err != nil || username == "" || email == "" {
-		http.Redirect(w, r, "/admin/dashboard?error=Invalid+ID,+missing+username,+or+missing+email", http.StatusSeeOther)
+	if err != nil || username == "" {
+		http.Redirect(w, r, "/admin/dashboard?error=Invalid+ID+or+missing+username", http.StatusSeeOther)
 		return
 	}
 
-	err = models.UpdateUser(c.DB, id, username, email, password)
+	err = models.UpdateUser(c.DB, id, username, password)
 	if err != nil {
 		http.Redirect(w, r, "/admin/dashboard?error=Failed+to+update+admin+credentials:+"+err.Error(), http.StatusSeeOther)
 		return
 	}
 
-	// Regenerate JWT token to maintain valid active session for the updated admin email
-	tokenString, err := middleware.GenerateJWT(email, "admin", c.JWTSecret)
+	// Regenerate JWT token to maintain valid active session for the updated admin username
+	tokenString, err := middleware.GenerateJWT(username, "admin", c.JWTSecret)
 	if err == nil {
 		http.SetCookie(w, &http.Cookie{
 			Name:     "auth_token",

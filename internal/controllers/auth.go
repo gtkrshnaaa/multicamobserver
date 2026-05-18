@@ -45,7 +45,7 @@ func (c *BaseController) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	// 1. Try authenticating as Admin first
 	adminUser, err := models.AuthenticateUser(c.DB, username, password)
 	if err == nil {
-		subject = adminUser.Email
+		subject = adminUser.Username
 		role = "admin"
 		redirectURL = "/admin/dashboard"
 	} else {
