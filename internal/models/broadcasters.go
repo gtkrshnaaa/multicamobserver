@@ -123,3 +123,9 @@ func DeleteBroadcaster(db *sql.DB, id int) error {
 	_, err := db.Exec("DELETE FROM broadcasters WHERE id = $1", id)
 	return err
 }
+
+// PurgeAllBroadcasters permanently deletes all broadcaster camera nodes from the system
+func PurgeAllBroadcasters(db *sql.DB) error {
+	_, err := db.Exec("DELETE FROM broadcasters")
+	return err
+}
