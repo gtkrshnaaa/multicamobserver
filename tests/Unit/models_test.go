@@ -44,6 +44,7 @@ func TestAdminModelAuthentication(t *testing.T) {
 	defer tx.Rollback()
 
 	// 2. Insert a temporary admin user into the transaction context
+	username := "temp-test-admin"
 	email := "temp-test-admin@multicamobserver.com"
 	plainPassword := "TempSecurePass2026!"
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
@@ -51,7 +52,7 @@ func TestAdminModelAuthentication(t *testing.T) {
 		t.Fatalf("Failed to hash password: %v", err)
 	}
 
-	_, err = tx.Exec("INSERT INTO users (email, password_hash) VALUES ($1, $2)", email, string(hashedPassword))
+	_, err = tx.Exec("INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)", username, email, string(hashedPassword))
 	if err != nil {
 		t.Fatalf("Failed to insert temp admin: %v", err)
 	}
@@ -94,6 +95,7 @@ func TestBroadcasterModelAuthentication(t *testing.T) {
 
 	// 2. Insert a temporary camera node
 	nodeID := "temp-cam-node-1"
+	broadcasterUsername := "temp_cam_node"
 	name := "Temporary Test Room Camera"
 	plainPassword := "TempCamPassSecure1!"
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
@@ -101,15 +103,15 @@ func TestBroadcasterModelAuthentication(t *testing.T) {
 		t.Fatalf("Failed to hash password: %v", err)
 	}
 
-	_, err = tx.Exec("INSERT INTO broadcasters (node_id, name, password_hash) VALUES ($1, $2, $3)", nodeID, name, string(hashedPassword))
+	_, err = tx.Exec("INSERT INTO broadcasters (node_id, username, name, password_hash) VALUES ($1, $2, $3, $4)", nodeID, broadcasterUsername, name, string(hashedPassword))
 	if err != nil {
 		t.Fatalf("Failed to insert temp broadcaster: %v", err)
 	}
 
 	// 3. Verify scanning and broadcaster details
 	var b models.Broadcaster
-	err = tx.QueryRow("SELECT id, node_id, name, password_hash, created_at FROM broadcasters WHERE node_id = $1", nodeID).
-		Scan(&b.ID, &b.NodeID, &b.Name, &b.PasswordHash, &b.CreatedAt)
+	err = tx.QueryRow("SELECT id, node_id, username, name, password_hash, created_at FROM broadcasters WHERE node_id = $1", nodeID).
+		Scan(&b.ID, &b.NodeID, &b.Username, &b.Name, &b.PasswordHash, &b.CreatedAt)
 
 	if err != nil {
 		t.Errorf("Failed to scan broadcaster row: %v", err)
@@ -136,7 +138,7 @@ func TestUpdateUser(t *testing.T) {
 
 	// Insert temporary admin
 	var id int
-	err := db.QueryRow("INSERT INTO users (email, password_hash) VALUES ('old-admin@multicamobserver.com', 'dummy') RETURNING id").Scan(&id)
+	err := db.QueryRow("INSERT INTO users (username, email, password_hash) VALUES ('old-admin', 'old-admin@multicamobserver.com', 'dummy') RETURNING id").Scan(&id)
 	if err != nil {
 		t.Fatalf("Failed to insert mock admin: %v", err)
 	}
@@ -145,9 +147,10 @@ func TestUpdateUser(t *testing.T) {
 	}()
 
 	// 1. Update email and password
+	newUsername := "updated-admin"
 	newEmail := "updated-admin@multicamobserver.com"
 	newPassword := "NewAdminPassword2026!"
-	err = models.UpdateUser(db, id, newEmail, newPassword)
+	err = models.UpdateUser(db, id, newUsername, newEmail, newPassword)
 	if err != nil {
 		t.Fatalf("Failed to update user: %v", err)
 	}
