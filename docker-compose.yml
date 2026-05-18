@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: multicam_secure_pass
       POSTGRES_DB: multicamobserver
     ports:
-      - "5432:5432"
+      - "54322:5432"
     volumes:
       - multicam_pgdata:/var/lib/postgresql/data
     healthcheck:
