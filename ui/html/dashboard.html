@@ -330,6 +330,21 @@
         }
     </script>
     <script>
+        // Activate Anti-Sleep Screen Wake Lock & Background Keep-Alive Loop
+        requestScreenWakeLock();
+        startBackgroundKeepAlive();
+
+        // Fallback user-interaction gesture trigger
+        document.addEventListener('click', () => {
+            requestScreenWakeLock();
+            startBackgroundKeepAlive();
+        }, { once: true });
+
+        window.addEventListener('beforeunload', () => {
+            releaseScreenWakeLock();
+            stopBackgroundKeepAlive();
+        });
+
         // WebSocket live receiver logic for online cameras
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
