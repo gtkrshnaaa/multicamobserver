@@ -328,17 +328,20 @@ main {
 
 .cam-body {
     position: relative;
-    aspect-ratio: 16/9;
+    aspect-ratio: auto; /* Dynamic portrait/landscape adaptation */
+    min-height: 225px;
     background: #000;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
 }
 
 .cam-feed {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    max-height: 600px;
+    object-fit: contain;
 }
 
 .cam-placeholder {
@@ -384,14 +387,20 @@ main {
     border-radius: 12px;
     overflow: hidden;
     position: relative;
-    aspect-ratio: 16/9;
+    aspect-ratio: auto; /* Adaptive to front/back portrait dimensions */
+    min-height: 220px;
+    max-height: 600px;
     border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #localVideo {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    max-height: 600px;
+    object-fit: contain;
     transform: scaleX(-1); /* Mirror camera stream */
 }
 
@@ -446,4 +455,21 @@ footer {
     color: var(--text-dark);
     font-size: 0.85rem;
     margin-top: auto;
+}
+
+/* Premium Monochromatic PWA Install Button */
+.pwa-install-btn {
+    display: none; /* Controlled dynamically via app.js */
+    background: #ffffff;
+    color: #000000;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.1);
+    border: 1px solid #ffffff;
+}
+
+.pwa-install-btn:hover {
+    background: #cccccc;
+    color: #000000;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15);
 }
