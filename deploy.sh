@@ -108,10 +108,13 @@ else
     echo "✅ Database is online, migrated, and verified."
 fi
 
+# Fetch the dynamically auto-generated node ID from the database
+NODE_ID=$(docker compose exec -T db psql -U multicam_user -d multicamobserver -t -A -c "SELECT node_id FROM broadcasters LIMIT 1;" || echo "cam-workspace")
+
 echo ""
 echo "══════════════════════════════════════════════"
 echo " ✅ MULTICAM OBSERVER DEPLOYMENT COMPLETE"
 echo " 🌐 App Portal: http://localhost:51177"
 echo " 👤 Admin User: admin@multicamobserver.com / ObserverAdmin2026!"
-echo " 🎥 Camera Node: cam-workspace / CameraNodeSecure1!"
+echo " 🎥 Camera Node: $NODE_ID / CameraNodeSecure1!"
 echo "══════════════════════════════════════════════"
