@@ -281,3 +281,74 @@ func TestDeleteBroadcaster(t *testing.T) {
 		t.Errorf("Expected broadcaster to be deleted, but still found in DB")
 	}
 }
+
+// TestPurgeBroadcasters verifies deleting all camera nodes at once
+func TestPurgeBroadcasters(t *testing.T) {
+	ctrl, db := setupTestControllerWithDB(t)
+	if ctrl == nil {
+		return
+	}
+	defer db.Close()
+
+	// Insert two camera nodes
+	_, _ = db.Exec("INSERT INTO broadcasters (name, password_hash) VALUES ('Mock Cam A', 'dummy'), ('Mock Cam B', 'dummy')")
+
+	req := httptest.NewRequest("POST", "/admin/broadcaster/purge", nil)
+	rr := httptest.NewRecorder()
+
+	ctrl.PurgeBroadcasters(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("Expected status 303, got %d", rr.Code)
+	}
+
+	// Verify database is completely empty of broadcaster records
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM broadcasters").Scan(&count)
+	if err != nil {
+		t.Fatalf("Failed to query total count: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("Expected broadcasters table to be purged, but found %d items", count)
+	}
+}
+
+// TestUpdateAdminCredentials verifies administrator can update their email/username and password
+func TestUpdateAdminCredentials(t *testing.T) {
+	ctrl, db := setupTestControllerWithDB(t)
+	if ctrl == nil {
+		return
+	}
+	defer db.Close()
+
+	// Insert mock administrator user
+	var id int
+	err := db.QueryRow("INSERT INTO users (email, password_hash) VALUES ('mock-admin@test.com', 'dummy') RETURNING id").Scan(&id)
+	if err != nil {
+		t.Fatalf("Failed to insert mock admin: %v", err)
+	}
+	defer func() {
+		_, _ = db.Exec("DELETE FROM users WHERE id = $1", id)
+	}()
+
+	formData := fmt.Sprintf("id=%d&email=updated-mock-admin@test.com&password=UpdatedMockPass2026!", id)
+	req := httptest.NewRequest("POST", "/admin/credentials/update", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+
+	ctrl.UpdateAdminCredentials(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("Expected status 303, got %d", rr.Code)
+	}
+
+	// Verify credentials updated in DB
+	var email string
+	err = db.QueryRow("SELECT email FROM users WHERE id = $1", id).Scan(&email)
+	if err != nil {
+		t.Fatalf("Failed to query email: %v", err)
+	}
+	if email != "updated-mock-admin@test.com" {
+		t.Errorf("Expected updated email 'updated-mock-admin@test.com', got: %s", email)
+	}
+}

@@ -189,6 +189,67 @@
                 </div>
             </div>
         </div>
+
+        <!-- ADMIN SECURITY AND DANGER ZONE CONTROLS -->
+        <div class="card" style="margin-top: 3rem; padding: 2rem; border-color: #2a1111;">
+            <div style="margin-bottom: 2rem; border-bottom: 1px solid #1a1a1a; padding-bottom: 1rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>System Security & Danger Zone</span>
+                </h2>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem;">Modify root admin access configurations or execute global system purges</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.6fr 1.2fr; gap: 4rem;">
+                <!-- Left Column: Edit Admin Credentials Form -->
+                <div>
+                    <h3 style="font-size: 1.05rem; font-weight: 600; color: #ffffff; margin-bottom: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif;">Modify Admin Account</h3>
+                    
+                    {{if .AdminUser}}
+                    <form action="/admin/credentials/update" method="POST">
+                        <input type="hidden" name="id" value="{{.AdminUser.ID}}">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <div class="form-group">
+                                <label class="form-label" for="admin_email" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Admin Username / Email</label>
+                                <input class="form-input" type="text" id="admin_email" name="email" value="{{.AdminUser.Email}}" required style="padding: 0.6rem;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="admin_password" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">New Password <span style="font-weight: normal; text-transform: none; letter-spacing: 0; color: var(--text-dark);">(Blank to keep current)</span></label>
+                                <input class="form-input" type="password" id="admin_password" name="password" placeholder="••••••••" style="padding: 0.6rem;">
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary" type="submit" style="margin-top: 1.5rem; padding: 0.7rem 1.5rem; font-size: 0.8rem; border-radius: 3px; font-weight: 600;">
+                            Update Admin Credentials
+                        </button>
+                    </form>
+                    {{else}}
+                    <p style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Failed to load administrator account profile parameters.</p>
+                    {{end}}
+                </div>
+
+                <!-- Right Column: Danger Zone Purge -->
+                <div style="border-left: 1px solid #2a1111; padding-left: 4rem;">
+                    <h3 style="font-size: 1.05rem; font-weight: 600; color: #ff5555; margin-bottom: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif;">Danger Zone</h3>
+                    
+                    <div style="background-color: #120505; border: 1px solid #551111; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
+                        <p style="font-size: 0.8rem; color: #ff5555; line-height: 1.4;">
+                            <strong>CRITICAL WARNING:</strong> Purging all camera nodes will immediately delete every registered observer broadcaster account in the database. Active streams will be terminated.
+                        </p>
+                    </div>
+
+                    <form action="/admin/broadcaster/purge" method="POST" onsubmit="return confirm('CRITICAL WARNING:\n\nYou are about to permanently delete ALL broadcaster camera nodes from the system.\nThis operation is completely irreversible and will terminate all active feeds.\n\nAre you sure you want to proceed with the purge?');">
+                        <button class="btn btn-danger" type="submit" style="width: 100%; justify-content: center; padding: 0.8rem; font-size: 0.8rem; border-radius: 3px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background-color: #3a0000; border-color: #ff5555; color: #ffffff;" onmouseover="this.style.backgroundColor='#660000'" onmouseout="this.style.backgroundColor='#3a0000'">
+                            Purge All Camera Nodes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- MONOCHROMATIC EDIT MODAL DIALOG -->
