@@ -1,4 +1,5 @@
--- Schema DDL definition for MulticamObserver
+-- Migration: 0001_create_tables
+-- Target: MulticamObserver DDL Structures
 
 -- 1. Create users table for Administrator (Viewer Node)
 CREATE TABLE IF NOT EXISTS users (

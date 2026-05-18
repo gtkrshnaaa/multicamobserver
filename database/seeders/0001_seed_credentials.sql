@@ -1,4 +1,5 @@
--- Seeder DML insertions for MulticamObserver
+-- Seeder: 0001_seed_credentials
+-- Target: MulticamObserver DML Insertions
 
 -- 1. Seed default admin credentials (Email: admin@multicamobserver.com / Password: ObserverAdmin2026!)
 INSERT INTO users (email, password_hash)

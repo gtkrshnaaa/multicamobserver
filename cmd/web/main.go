@@ -140,10 +140,10 @@ func main() {
 // bootstrapDatabase runs database schema and seeder commands to initialize tables
 func bootstrapDatabase(db *sql.DB) {
 	// 1. Run Schema Migrations (DDL)
-	schemaFile := filepath.Join("database", "schema.sql")
+	schemaFile := filepath.Join("database", "migrations", "0001_create_tables.sql")
 	schemaBytes, err := os.ReadFile(schemaFile)
 	if err != nil {
-		log.Printf("⚠️  Warning: database schema file not found, skipping DDL migration: %v", err)
+		log.Printf("⚠️  Warning: database migration file not found, skipping DDL migration: %v", err)
 		return
 	}
 
@@ -154,7 +154,7 @@ func bootstrapDatabase(db *sql.DB) {
 	log.Println("✅ Successfully initialized database DDL schema tables.")
 
 	// 2. Run Seeder Initializer (DML)
-	seederFile := filepath.Join("database", "seeder.sql")
+	seederFile := filepath.Join("database", "seeders", "0001_seed_credentials.sql")
 	seederBytes, err := os.ReadFile(seederFile)
 	if err != nil {
 		log.Printf("⚠️  Warning: database seeder file not found, skipping DML seed: %v", err)
