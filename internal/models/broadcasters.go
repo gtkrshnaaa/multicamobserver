@@ -23,9 +23,25 @@ func GetBroadcasterByNodeID(db *sql.DB, nodeID string) (*Broadcaster, error) {
 	return &b, nil
 }
 
-// AuthenticateBroadcaster checks if camera node credentials are valid
-func AuthenticateBroadcaster(db *sql.DB, nodeID, password string) (*Broadcaster, error) {
-	b, err := GetBroadcasterByNodeID(db, nodeID)
+// GetBroadcasterByName retrieves broadcaster details from PostgreSQL using name/username
+func GetBroadcasterByName(db *sql.DB, name string) (*Broadcaster, error) {
+	row := db.QueryRow("SELECT id, node_id, name, password_hash, created_at FROM broadcasters WHERE name = $1", name)
+
+	var b Broadcaster
+	err := row.Scan(&b.ID, &b.NodeID, &b.Name, &b.PasswordHash, &b.CreatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("broadcaster node not found")
+		}
+		return nil, err
+	}
+
+	return &b, nil
+}
+
+// AuthenticateBroadcaster checks if camera node credentials are valid using name (username) and password
+func AuthenticateBroadcaster(db *sql.DB, name, password string) (*Broadcaster, error) {
+	b, err := GetBroadcasterByName(db, name)
 	if err != nil {
 		return nil, err
 	}
