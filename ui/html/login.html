@@ -45,8 +45,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" id="usernameLabel" for="username">Administrator Email</label>
-                        <input class="form-input" type="text" id="username" name="username" placeholder="e.g. admin@multicamobserver.com" required autocomplete="username">
+                        <label class="form-label" id="usernameLabel" for="username">Username or Email</label>
+                        <input class="form-input" type="text" id="username" name="username" placeholder="e.g. admin@multicamobserver.com or cam-workspace" required autocomplete="username">
                     </div>
 
                     <div class="form-group">
@@ -68,22 +68,11 @@
 
     <script src="/static/js/app.js"></script>
     <script>
+        // Kept for structure consistency but simplified to maintain single universal username/email label
         function toggleLabels() {
-            const role = document.getElementById('role').value;
-            const label = document.getElementById('usernameLabel');
             const input = document.getElementById('username');
-            
-            if (role === 'admin') {
-                label.innerText = 'Administrator Email';
-                input.placeholder = 'e.g. admin@multicamobserver.com';
-                input.type = 'email';
-            } else {
-                label.innerText = 'Broadcaster Node ID';
-                input.placeholder = 'e.g. cam-workspace';
-                input.type = 'text';
-            }
+            input.type = 'text';
         }
-        // Run once on load to ensure labels are in sync
         toggleLabels();
     </script>
 </body>
