@@ -255,6 +255,10 @@
                 statusBadge.innerText = "Broadcasting";
                 statusBadge.className = "badge badge-online";
 
+                // Activate Anti-Sleep Wake Lock and Background Keep-Alive Loop
+                requestScreenWakeLock();
+                startBackgroundKeepAlive();
+
                 // Start transmission loop at 5 fps (extremely optimized for server & bandwidth)
                 sendIntervalID = setInterval(sendFrame, 1000 / 5);
             };
@@ -282,6 +286,10 @@
             if (sendIntervalID) {
                 clearInterval(sendIntervalID);
             }
+            
+            // Release Anti-Sleep locks
+            releaseScreenWakeLock();
+            stopBackgroundKeepAlive();
         }
 
         // 3. Compress current video frame to JPEG and push binary payload
@@ -354,6 +362,10 @@
         // Initialize node
         startCamera();
         resetScreensaverTimer();
+
+        window.addEventListener('beforeunload', () => {
+            cleanupTransmission();
+        });
     </script>
 </body>
 </html>
