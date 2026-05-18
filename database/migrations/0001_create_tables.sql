@@ -1,6 +1,9 @@
 -- Migration: 0001_create_tables
 -- Target: MulticamObserver DDL Structures
 
+-- Enable pgcrypto extension for database-level bcrypt hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. Create users table for Administrator (Viewer Node)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
