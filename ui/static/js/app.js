@@ -59,3 +59,68 @@ function triggerPWAInstallation() {
     });
   });
 }
+
+// Screen Wake Lock API Helpers
+let globalWakeLock = null;
+
+async function requestScreenWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      globalWakeLock = await navigator.wakeLock.request('screen');
+      console.log('⚡ Screen Wake Lock acquired and active!');
+      globalWakeLock.addEventListener('release', () => {
+        console.log('⚡ Screen Wake Lock was released');
+      });
+    } catch (err) {
+      console.warn('⚠️ Screen Wake Lock request failed:', err);
+    }
+  } else {
+    console.warn('⚠️ Screen Wake Lock API is not supported in this browser.');
+  }
+}
+
+function releaseScreenWakeLock() {
+  if (globalWakeLock) {
+    globalWakeLock.release()
+      .then(() => {
+        globalWakeLock = null;
+        console.log('⚡ Screen Wake Lock released successfully');
+      })
+      .catch(err => {
+        console.error('❌ Failed to release Screen Wake Lock:', err);
+      });
+  }
+}
+
+// Automatically re-acquire Wake Lock when tab returns to focus
+document.addEventListener('visibilitychange', async () => {
+  if (globalWakeLock !== null && document.visibilityState === 'visible') {
+    await requestScreenWakeLock();
+  }
+});
+
+// Silent Base64 Audio Keep-Alive Loop (tricks OS/browser sandbox to keep JS event loop warm)
+let globalSilentAudio = null;
+
+function startBackgroundKeepAlive() {
+  if (!globalSilentAudio) {
+    // Minimal silent WAV audio file loop
+    globalSilentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+    globalSilentAudio.loop = true;
+  }
+  
+  globalSilentAudio.play()
+    .then(() => {
+      console.log('⚡ Background audio keep-alive active! Tab suspension prevented.');
+    })
+    .catch(err => {
+      console.warn('⚠️ Audio keep-alive loop waiting for user interaction to play:', err);
+    });
+}
+
+function stopBackgroundKeepAlive() {
+  if (globalSilentAudio) {
+    globalSilentAudio.pause();
+    console.log('⚡ Background audio keep-alive deactivated.');
+  }
+}
