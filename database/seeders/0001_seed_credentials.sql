@@ -1,10 +1,10 @@
 -- Seeder: 0001_seed_credentials
 -- Target: MulticamObserver DML Insertions
 
--- 1. Seed default admin credentials (Username: admin / Email: admin@multicamobserver.com / Password: ObserverAdmin2026!)
+-- 1. Seed default admin credentials (Username: admin / Password: ObserverAdmin2026!)
 -- Hashed automatically at database level using pgcrypto blowfish crypt
-INSERT INTO users (username, email, password_hash)
-VALUES ('admin', 'admin@multicamobserver.com', crypt('ObserverAdmin2026!', gen_salt('bf')))
+INSERT INTO users (username, password_hash)
+VALUES ('admin', crypt('ObserverAdmin2026!', gen_salt('bf')))
 ON CONFLICT (username) DO NOTHING;
 
 -- 2. Seed default broadcaster camera credentials
