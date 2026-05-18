@@ -136,6 +136,7 @@
                             <thead>
                                 <tr style="border-bottom: 1px solid #1a1a1a; color: var(--text-muted);">
                                     <th style="padding: 0.8rem 0.5rem; font-weight: 600;">Broadcaster Name</th>
+                                    <th style="padding: 0.8rem 0.5rem; font-weight: 600;">Login Username</th>
                                     <th style="padding: 0.8rem 0.5rem; font-weight: 600;">UUID Node ID</th>
                                     <th style="padding: 0.8rem 0.5rem; font-weight: 600; text-align: right;">Actions</th>
                                 </tr>
@@ -144,10 +145,11 @@
                                 {{range .Cameras}}
                                 <tr style="border-bottom: 1px solid #0d0d0d; transition: background 0.2s;" onmouseover="this.style.background='#080808'" onmouseout="this.style.background='transparent'">
                                     <td style="padding: 1rem 0.5rem; font-weight: 500; color: #ffffff;">{{.Name}}</td>
+                                    <td style="padding: 1rem 0.5rem; font-family: monospace; font-size: 0.8rem; color: #ffffff;">{{.Username}}</td>
                                     <td style="padding: 1rem 0.5rem;"><code style="color: var(--text-muted); font-size: 0.8rem;">{{.NodeID}}</code></td>
                                     <td style="padding: 1rem 0.5rem; text-align: right;">
                                         <div style="display: inline-flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
-                                            <button class="btn btn-outline" onclick="openEditModal({{.ID}}, '{{.Name}}')" style="padding: 0.35rem 0.7rem; font-size: 0.75rem; border-radius: 3px;">
+                                            <button class="btn btn-outline" onclick="openEditModal({{.ID}}, '{{.Name}}', '{{.Username}}')" style="padding: 0.35rem 0.7rem; font-size: 0.75rem; border-radius: 3px;">
                                                 Edit
                                             </button>
                                             
@@ -162,7 +164,7 @@
                                 </tr>
                                 {{else}}
                                 <tr>
-                                    <td colspan="3" style="padding: 2.5rem 0; text-align: center; color: var(--text-muted); font-style: italic;">No camera nodes registered in database.</td>
+                                    <td colspan="4" style="padding: 2.5rem 0; text-align: center; color: var(--text-muted); font-style: italic;">No camera nodes registered in database.</td>
                                 </tr>
                                 {{end}}
                             </tbody>
@@ -174,6 +176,10 @@
                 <div style="border-left: 1px solid #1a1a1a; padding-left: 4rem;">
                     <h3 style="font-size: 1.05rem; font-weight: 600; color: #ffffff; margin-bottom: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif;">Register New Camera Node</h3>
                     <form action="/admin/broadcaster/create" method="POST">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label class="form-label" for="new_username" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Login Username</label>
+                            <input class="form-input" type="text" id="new_username" name="username" placeholder="e.g. lobby_cam" required style="padding: 0.6rem;">
+                        </div>
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label class="form-label" for="new_name" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Broadcaster Name</label>
                             <input class="form-input" type="text" id="new_name" name="name" placeholder="e.g. Workspace Camera" required style="padding: 0.6rem;">
@@ -212,13 +218,17 @@
                     <form action="/admin/credentials/update" method="POST">
                         <input type="hidden" name="id" value="{{.AdminUser.ID}}">
                         
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;">
                             <div class="form-group">
-                                <label class="form-label" for="admin_email" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Admin Username / Email</label>
-                                <input class="form-input" type="text" id="admin_email" name="email" value="{{.AdminUser.Email}}" required style="padding: 0.6rem;">
+                                <label class="form-label" for="admin_username" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Admin Username</label>
+                                <input class="form-input" type="text" id="admin_username" name="username" value="{{.AdminUser.Username}}" required style="padding: 0.6rem;">
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="admin_password" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">New Password <span style="font-weight: normal; text-transform: none; letter-spacing: 0; color: var(--text-dark);">(Blank to keep current)</span></label>
+                                <label class="form-label" for="admin_email" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Admin Email</label>
+                                <input class="form-input" type="email" id="admin_email" name="email" value="{{.AdminUser.Email}}" required style="padding: 0.6rem;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="admin_password" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">New Password <span style="font-weight: normal; text-transform: none; letter-spacing: 0; color: var(--text-dark);">(Blank to keep)</span></label>
                                 <input class="form-input" type="password" id="admin_password" name="password" placeholder="••••••••" style="padding: 0.6rem;">
                             </div>
                         </div>
@@ -265,6 +275,11 @@
                 <input type="hidden" id="edit_id" name="id">
                 
                 <div class="form-group" style="margin-bottom: 1rem;">
+                    <label class="form-label" for="edit_username" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Login Username</label>
+                    <input class="form-input" type="text" id="edit_username" name="username" required style="padding: 0.6rem;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1rem;">
                     <label class="form-label" for="edit_name" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Broadcaster Name</label>
                     <input class="form-input" type="text" id="edit_name" name="name" required style="padding: 0.6rem;">
                 </div>
@@ -289,8 +304,9 @@
     <script src="/static/js/app.js"></script>
     <script>
         // Modal handlers
-        function openEditModal(id, name) {
+        function openEditModal(id, name, username) {
             document.getElementById('edit_id').value = id;
+            document.getElementById('edit_username').value = username;
             document.getElementById('edit_name').value = name;
             document.getElementById('edit_password').value = '';
             const modal = document.getElementById('editModal');
