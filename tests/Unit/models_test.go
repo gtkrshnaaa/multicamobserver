@@ -45,23 +45,22 @@ func TestAdminModelAuthentication(t *testing.T) {
 
 	// 2. Insert a temporary admin user into the transaction context
 	username := "temp-test-admin"
-	email := "temp-test-admin@multicamobserver.com"
 	plainPassword := "TempSecurePass2026!"
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
 	if err != nil {
 		t.Fatalf("Failed to hash password: %v", err)
 	}
 
-	_, err = tx.Exec("INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)", username, email, string(hashedPassword))
+	_, err = tx.Exec("INSERT INTO users (username, password_hash) VALUES ($1, $2)", username, string(hashedPassword))
 	if err != nil {
 		t.Fatalf("Failed to insert temp admin: %v", err)
 	}
 
-	// 3. Test GetUserByEmail
+	// 3. Test GetUserByUsername
 	// Note: Because internal methods take *sql.DB directly, we can temporarily query the transaction context
 	// or test the dynamic sql.Row scan directly. Let's test the Scan & bcrypt parsing logic.
 	var scannedHash string
-	err = tx.QueryRow("SELECT password_hash FROM users WHERE email = $1", email).Scan(&scannedHash)
+	err = tx.QueryRow("SELECT password_hash FROM users WHERE username = $1", username).Scan(&scannedHash)
 	if err != nil {
 		t.Errorf("Failed to query scanned admin: %v", err)
 	}
@@ -138,7 +137,7 @@ func TestUpdateUser(t *testing.T) {
 
 	// Insert temporary admin
 	var id int
-	err := db.QueryRow("INSERT INTO users (username, email, password_hash) VALUES ('old-admin', 'old-admin@multicamobserver.com', 'dummy') RETURNING id").Scan(&id)
+	err := db.QueryRow("INSERT INTO users (username, password_hash) VALUES ('old-admin', 'dummy') RETURNING id").Scan(&id)
 	if err != nil {
 		t.Fatalf("Failed to insert mock admin: %v", err)
 	}
@@ -146,23 +145,22 @@ func TestUpdateUser(t *testing.T) {
 		_, _ = db.Exec("DELETE FROM users WHERE id = $1", id)
 	}()
 
-	// 1. Update email and password
+	// 1. Update credentials
 	newUsername := "updated-admin"
-	newEmail := "updated-admin@multicamobserver.com"
 	newPassword := "NewAdminPassword2026!"
-	err = models.UpdateUser(db, id, newUsername, newEmail, newPassword)
+	err = models.UpdateUser(db, id, newUsername, newPassword)
 	if err != nil {
 		t.Fatalf("Failed to update user: %v", err)
 	}
 
 	// 2. Fetch updated user and check credentials
-	u, err := models.GetUserByEmail(db, newEmail)
+	u, err := models.GetUserByUsername(db, newUsername)
 	if err != nil {
 		t.Fatalf("Failed to retrieve updated user: %v", err)
 	}
 
-	if u.Email != newEmail {
-		t.Errorf("Expected email to be %s, got: %s", newEmail, u.Email)
+	if u.Username != newUsername {
+		t.Errorf("Expected username to be %s, got: %s", newUsername, u.Username)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(newPassword))
