@@ -142,7 +142,7 @@ func TestShowBroadcasterValidNodeID(t *testing.T) {
 		t.Fatalf("Failed to generate password hash: %v", err)
 	}
 
-	_, err = db.Exec("INSERT INTO broadcasters (node_id, name, password_hash) VALUES ($1, $2, $3)", nodeID, name, string(hashedPassword))
+	_, err = db.Exec("INSERT INTO broadcasters (node_id, username, name, password_hash) VALUES ($1, $2, $3, $4)", nodeID, "feature_test_cam", name, string(hashedPassword))
 	if err != nil {
 		t.Fatalf("Failed to insert temp broadcaster: %v", err)
 	}
@@ -174,7 +174,7 @@ func TestCreateBroadcaster(t *testing.T) {
 	}
 	defer db.Close()
 
-	formData := "name=Yard+Camera&password=YardSecurePassword2026!"
+	formData := "username=yard_camera&name=Yard+Camera&password=YardSecurePassword2026!"
 	req := httptest.NewRequest("POST", "/admin/broadcaster/create", strings.NewReader(formData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
@@ -193,7 +193,7 @@ func TestCreateBroadcaster(t *testing.T) {
 
 	// Verify insertion in database
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM broadcasters WHERE name = 'Yard Camera'").Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM broadcasters WHERE username = 'yard_camera'").Scan(&count)
 	if err != nil {
 		t.Fatalf("Failed to query database count: %v", err)
 	}
@@ -202,7 +202,7 @@ func TestCreateBroadcaster(t *testing.T) {
 	}
 
 	// Clean up
-	_, _ = db.Exec("DELETE FROM broadcasters WHERE name = 'Yard Camera'")
+	_, _ = db.Exec("DELETE FROM broadcasters WHERE username = 'yard_camera'")
 }
 
 // TestUpdateBroadcaster checks dynamic editing of name and password parameters
@@ -215,7 +215,7 @@ func TestUpdateBroadcaster(t *testing.T) {
 
 	// Insert test camera
 	var id int
-	err := db.QueryRow("INSERT INTO broadcasters (name, password_hash) VALUES ('Old Lobby Cam', 'dummyhash') RETURNING id").Scan(&id)
+	err := db.QueryRow("INSERT INTO broadcasters (username, name, password_hash) VALUES ('old_lobby_cam', 'Old Lobby Cam', 'dummyhash') RETURNING id").Scan(&id)
 	if err != nil {
 		t.Fatalf("Failed to insert mock camera: %v", err)
 	}
@@ -223,7 +223,7 @@ func TestUpdateBroadcaster(t *testing.T) {
 		_, _ = db.Exec("DELETE FROM broadcasters WHERE id = $1", id)
 	}()
 
-	formData := fmt.Sprintf("id=%d&name=New+Lobby+Cam&password=LobbyPassUpdated1!", id)
+	formData := fmt.Sprintf("id=%d&username=new_lobby_cam&name=New+Lobby+Cam&password=LobbyPassUpdated1!", id)
 	req := httptest.NewRequest("POST", "/admin/broadcaster/update", strings.NewReader(formData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
@@ -255,7 +255,7 @@ func TestDeleteBroadcaster(t *testing.T) {
 
 	// Insert test camera to delete
 	var id int
-	err := db.QueryRow("INSERT INTO broadcasters (name, password_hash) VALUES ('To Delete Cam', 'dummy') RETURNING id").Scan(&id)
+	err := db.QueryRow("INSERT INTO broadcasters (username, name, password_hash) VALUES ('to_delete_cam', 'To Delete Cam', 'dummy') RETURNING id").Scan(&id)
 	if err != nil {
 		t.Fatalf("Failed to insert mock camera: %v", err)
 	}
@@ -291,7 +291,7 @@ func TestPurgeBroadcasters(t *testing.T) {
 	defer db.Close()
 
 	// Insert two camera nodes
-	_, _ = db.Exec("INSERT INTO broadcasters (name, password_hash) VALUES ('Mock Cam A', 'dummy'), ('Mock Cam B', 'dummy')")
+	_, _ = db.Exec("INSERT INTO broadcasters (username, name, password_hash) VALUES ('mock_cam_a', 'Mock Cam A', 'dummy'), ('mock_cam_b', 'Mock Cam B', 'dummy')")
 
 	req := httptest.NewRequest("POST", "/admin/broadcaster/purge", nil)
 	rr := httptest.NewRecorder()
@@ -323,7 +323,7 @@ func TestUpdateAdminCredentials(t *testing.T) {
 
 	// Insert mock administrator user
 	var id int
-	err := db.QueryRow("INSERT INTO users (email, password_hash) VALUES ('mock-admin@test.com', 'dummy') RETURNING id").Scan(&id)
+	err := db.QueryRow("INSERT INTO users (username, email, password_hash) VALUES ('mock-admin', 'mock-admin@test.com', 'dummy') RETURNING id").Scan(&id)
 	if err != nil {
 		t.Fatalf("Failed to insert mock admin: %v", err)
 	}
@@ -331,7 +331,7 @@ func TestUpdateAdminCredentials(t *testing.T) {
 		_, _ = db.Exec("DELETE FROM users WHERE id = $1", id)
 	}()
 
-	formData := fmt.Sprintf("id=%d&email=updated-mock-admin@test.com&password=UpdatedMockPass2026!", id)
+	formData := fmt.Sprintf("id=%d&username=updated-mock-admin&email=updated-mock-admin@test.com&password=UpdatedMockPass2026!", id)
 	req := httptest.NewRequest("POST", "/admin/credentials/update", strings.NewReader(formData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
