@@ -14,6 +14,7 @@ import (
 type CameraNodeStatus struct {
 	ID          int    `json:"id"`
 	NodeID      string `json:"node_id"`
+	Username    string `json:"username"`
 	Name        string `json:"name"`
 	IsOnline    bool   `json:"is_online"`
 	ViewerCount int    `json:"viewer_count"`
@@ -35,6 +36,7 @@ func (c *BaseController) ShowDashboard(w http.ResponseWriter, r *http.Request) {
 		status := CameraNodeStatus{
 			ID:          b.ID,
 			NodeID:      b.NodeID,
+			Username:    b.Username,
 			Name:        b.Name,
 			IsOnline:    false,
 			ViewerCount: 0,
@@ -78,15 +80,16 @@ func (c *BaseController) CreateBroadcaster(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	username := r.FormValue("username")
 	name := r.FormValue("name")
 	password := r.FormValue("password")
 
-	if name == "" || password == "" {
-		http.Redirect(w, r, "/admin/dashboard?error=Broadcaster+name+and+password+are+required", http.StatusSeeOther)
+	if username == "" || name == "" || password == "" {
+		http.Redirect(w, r, "/admin/dashboard?error=Broadcaster+username,+name,+and+password+are+required", http.StatusSeeOther)
 		return
 	}
 
-	_, err := models.CreateBroadcaster(c.DB, name, password)
+	_, err := models.CreateBroadcaster(c.DB, username, name, password)
 	if err != nil {
 		http.Redirect(w, r, "/admin/dashboard?error=Failed+to+create:+"+err.Error(), http.StatusSeeOther)
 		return
@@ -103,17 +106,18 @@ func (c *BaseController) UpdateBroadcaster(w http.ResponseWriter, r *http.Reques
 	}
 
 	idStr := r.FormValue("id")
+	username := r.FormValue("username")
 	name := r.FormValue("name")
 	password := r.FormValue("password")
 
 	var id int
 	_, err := fmt.Sscanf(idStr, "%d", &id)
-	if err != nil || name == "" {
-		http.Redirect(w, r, "/admin/dashboard?error=Invalid+ID+or+missing+name", http.StatusSeeOther)
+	if err != nil || username == "" || name == "" {
+		http.Redirect(w, r, "/admin/dashboard?error=Invalid+ID,+missing+username,+or+missing+name", http.StatusSeeOther)
 		return
 	}
 
-	err = models.UpdateBroadcaster(c.DB, id, name, password)
+	err = models.UpdateBroadcaster(c.DB, id, username, name, password)
 	if err != nil {
 		http.Redirect(w, r, "/admin/dashboard?error=Failed+to+update:+"+err.Error(), http.StatusSeeOther)
 		return
@@ -170,17 +174,18 @@ func (c *BaseController) UpdateAdminCredentials(w http.ResponseWriter, r *http.R
 	}
 
 	idStr := r.FormValue("id")
+	username := r.FormValue("username")
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
 	var id int
 	_, err := fmt.Sscanf(idStr, "%d", &id)
-	if err != nil || email == "" {
-		http.Redirect(w, r, "/admin/dashboard?error=Invalid+ID+or+missing+email", http.StatusSeeOther)
+	if err != nil || username == "" || email == "" {
+		http.Redirect(w, r, "/admin/dashboard?error=Invalid+ID,+missing+username,+or+missing+email", http.StatusSeeOther)
 		return
 	}
 
-	err = models.UpdateUser(c.DB, id, email, password)
+	err = models.UpdateUser(c.DB, id, username, email, password)
 	if err != nil {
 		http.Redirect(w, r, "/admin/dashboard?error=Failed+to+update+admin+credentials:+"+err.Error(), http.StatusSeeOther)
 		return
