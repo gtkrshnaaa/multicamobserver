@@ -3,11 +3,9 @@ package controllers
 import (
 	"log"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/gtkrshnaaa/multicamobserver/internal/middleware"
 	"github.com/gtkrshnaaa/multicamobserver/internal/models"
 )
 
