@@ -23,7 +23,7 @@ func dummyHandler(w http.ResponseWriter, r *http.Request) {
 
 // TestGenerateJWT verifies JWT creation does not return errors and parses properly
 func TestGenerateJWT(t *testing.T) {
-	token, err := middleware.GenerateJWT("admin@multicamobserver.com", "admin", testSecret)
+	token, err := middleware.GenerateJWT("admin", "admin", testSecret)
 	if err != nil {
 		t.Fatalf("Failed to generate JWT: %v", err)
 	}
@@ -107,8 +107,8 @@ func TestRequireAuthIncorrectRole(t *testing.T) {
 func TestRequireAuthSuccess(t *testing.T) {
 	handler := middleware.RequireAuth("admin", testSecret, dummyHandler)
 
-	adminEmail := "admin@multicamobserver.com"
-	token, err := middleware.GenerateJWT(adminEmail, "admin", testSecret)
+	adminUsername := "admin"
+	token, err := middleware.GenerateJWT(adminUsername, "admin", testSecret)
 	if err != nil {
 		t.Fatalf("Failed to generate JWT: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestRequireAuthSuccess(t *testing.T) {
 	}
 
 	body := rr.Body.String()
-	expectedBody := "Access Granted: " + adminEmail
+	expectedBody := "Access Granted: " + adminUsername
 	if body != expectedBody {
 		t.Errorf("Expected body %s, got %s", expectedBody, body)
 	}
