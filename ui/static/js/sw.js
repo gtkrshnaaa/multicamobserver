@@ -3,7 +3,9 @@ const ASSETS = [
   '/login',
   '/static/css/styles.css',
   '/static/js/app.js',
-  '/static/manifest.json'
+  '/static/manifest.json',
+  '/static/icons/icon-192.png',
+  '/static/icons/icon-512.png'
 ];
 
 // Install Event
