@@ -90,7 +90,7 @@ func TestHandleLoginValidation(t *testing.T) {
 
 	// Submit an invalid set of credentials
 	formData := url.Values{}
-	formData.Set("username", "somebody@multicamobserver.com")
+	formData.Set("username", "non_existent_user")
 	formData.Set("password", "wrongpassword123")
 
 	req := httptest.NewRequest("POST", "/login", strings.NewReader(formData.Encode()))
