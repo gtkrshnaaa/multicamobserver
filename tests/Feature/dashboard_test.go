@@ -313,7 +313,7 @@ func TestPurgeBroadcasters(t *testing.T) {
 	}
 }
 
-// TestUpdateAdminCredentials verifies administrator can update their email/username and password
+// TestUpdateAdminCredentials verifies administrator can update their username and password
 func TestUpdateAdminCredentials(t *testing.T) {
 	ctrl, db := setupTestControllerWithDB(t)
 	if ctrl == nil {
@@ -323,7 +323,7 @@ func TestUpdateAdminCredentials(t *testing.T) {
 
 	// Insert mock administrator user
 	var id int
-	err := db.QueryRow("INSERT INTO users (username, email, password_hash) VALUES ('mock-admin', 'mock-admin@test.com', 'dummy') RETURNING id").Scan(&id)
+	err := db.QueryRow("INSERT INTO users (username, password_hash) VALUES ('mock-admin', 'dummy') RETURNING id").Scan(&id)
 	if err != nil {
 		t.Fatalf("Failed to insert mock admin: %v", err)
 	}
@@ -331,7 +331,7 @@ func TestUpdateAdminCredentials(t *testing.T) {
 		_, _ = db.Exec("DELETE FROM users WHERE id = $1", id)
 	}()
 
-	formData := fmt.Sprintf("id=%d&username=updated-mock-admin&email=updated-mock-admin@test.com&password=UpdatedMockPass2026!", id)
+	formData := fmt.Sprintf("id=%d&username=updated-mock-admin&password=UpdatedMockPass2026!", id)
 	req := httptest.NewRequest("POST", "/admin/credentials/update", strings.NewReader(formData))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rr := httptest.NewRecorder()
@@ -343,12 +343,12 @@ func TestUpdateAdminCredentials(t *testing.T) {
 	}
 
 	// Verify credentials updated in DB
-	var email string
-	err = db.QueryRow("SELECT email FROM users WHERE id = $1", id).Scan(&email)
+	var username string
+	err = db.QueryRow("SELECT username FROM users WHERE id = $1", id).Scan(&username)
 	if err != nil {
-		t.Fatalf("Failed to query email: %v", err)
+		t.Fatalf("Failed to query username: %v", err)
 	}
-	if email != "updated-mock-admin@test.com" {
-		t.Errorf("Expected updated email 'updated-mock-admin@test.com', got: %s", email)
+	if username != "updated-mock-admin" {
+		t.Errorf("Expected updated username 'updated-mock-admin', got: %s", username)
 	}
 }
