@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # MulticamObserver - Redeploy Script
-# Pulls latest changes from devv and runs a fresh deployment
+# Pulls latest changes from main and runs a fresh deployment
 
 set -e
 
@@ -13,9 +13,9 @@ echo "════════════════════════�
 echo "🧹 Resetting local changes..."
 git reset --hard HEAD
 
-# 2. Pull latest from devv
-echo "📥 Pulling latest changes from branch devv..."
-git pull origin devv
+# 2. Pull latest from main
+echo "📥 Pulling latest changes from branch main..."
+git pull origin main
 
 # 3. Take down current containers
 echo "🐳 Stopping current containers..."

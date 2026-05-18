@@ -27,8 +27,3 @@ ON CONFLICT (email) DO NOTHING;
 INSERT INTO broadcasters (node_id, name, password_hash)
 VALUES ('cam-workspace', 'Workspace Camera', '$2a$10$I0L2g.jMs01vQ4DBiZomc.THjh6TZuhdAVJgQI15BvayL9UpEQ47q')
 ON CONFLICT (node_id) DO NOTHING;
-
--- Node 2: Front Door Camera (ID: cam-frontdoor / Password: CameraNodeSecure2!)
-INSERT INTO broadcasters (node_id, name, password_hash)
-VALUES ('cam-frontdoor', 'Front Door Camera', '$2a$10$XEJpOAh6q3r2ySKvaY9HIei5BLoL74fG/XJLCJMrtzTg6hu2Ptjg6')
-ON CONFLICT (node_id) DO NOTHING;
