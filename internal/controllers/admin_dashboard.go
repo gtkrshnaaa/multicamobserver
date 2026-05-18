@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/gtkrshnaaa/multicamobserver/internal/middleware"
 	"github.com/gtkrshnaaa/multicamobserver/internal/models"
 )
 
@@ -50,14 +52,22 @@ func (c *BaseController) ShowDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	c.StreamRegistry.Mu.RUnlock()
 
+	// Retrieve current logged-in admin user to pre-fill admin edit form
+	claims := middleware.GetUserClaims(r)
+	var adminUser *models.User
+	if claims != nil {
+		adminUser, _ = models.GetUserByEmail(c.DB, claims.Subject)
+	}
+
 	// Extract query parameter messages for feedback popups
 	successMsg := r.URL.Query().Get("success")
 	errorMsg := r.URL.Query().Get("error")
 
 	c.Render(w, r, "dashboard.html", map[string]interface{}{
-		"Cameras": cameraStatuses,
-		"Success": successMsg,
-		"Error":   errorMsg,
+		"Cameras":   cameraStatuses,
+		"Success":   successMsg,
+		"Error":     errorMsg,
+		"AdminUser": adminUser,
 	})
 }
 
@@ -134,6 +144,63 @@ func (c *BaseController) DeleteBroadcaster(w http.ResponseWriter, r *http.Reques
 	}
 
 	http.Redirect(w, r, "/admin/dashboard?success=Broadcaster+deleted+successfully", http.StatusSeeOther)
+}
+
+// PurgeBroadcasters permanently deletes all broadcaster camera nodes from the system
+func (c *BaseController) PurgeBroadcasters(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := models.PurgeAllBroadcasters(c.DB)
+	if err != nil {
+		http.Redirect(w, r, "/admin/dashboard?error=Failed+to+purge+camera+nodes:+"+err.Error(), http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/admin/dashboard?success=All+broadcaster+camera+nodes+successfully+purged", http.StatusSeeOther)
+}
+
+// UpdateAdminCredentials allows the logged-in administrator to modify their own email/username and password
+func (c *BaseController) UpdateAdminCredentials(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.FormValue("id")
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	var id int
+	_, err := fmt.Sscanf(idStr, "%d", &id)
+	if err != nil || email == "" {
+		http.Redirect(w, r, "/admin/dashboard?error=Invalid+ID+or+missing+email", http.StatusSeeOther)
+		return
+	}
+
+	err = models.UpdateUser(c.DB, id, email, password)
+	if err != nil {
+		http.Redirect(w, r, "/admin/dashboard?error=Failed+to+update+admin+credentials:+"+err.Error(), http.StatusSeeOther)
+		return
+	}
+
+	// Regenerate JWT token to maintain valid active session for the updated admin email
+	tokenString, err := middleware.GenerateJWT(email, "admin", c.JWTSecret)
+	if err == nil {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "auth_token",
+			Value:    tokenString,
+			Path:     "/",
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			Secure:   false, // Set to true in production over HTTPS
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
+	http.Redirect(w, r, "/admin/dashboard?success=Administrator+credentials+updated+successfully", http.StatusSeeOther)
 }
 
 // ShowHealth returns a JSON healthcheck status representing service availability
