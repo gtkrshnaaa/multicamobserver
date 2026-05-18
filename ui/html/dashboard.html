@@ -20,7 +20,7 @@
             </a>
             <div class="nav-links">
                 <button class="btn btn-primary pwa-install-btn" onclick="triggerPWAInstallation()" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Install App</button>
-                <span style="font-size: 0.9rem; color: var(--text-muted);">Admin Session</span>
+                <span class="nav-session-label">Admin Session</span>
                 <a href="/logout" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -128,7 +128,7 @@
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem;">Create, update, and manage access parameters for physical camera broadcaster nodes</p>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 4rem;">
+            <div class="admin-management-layout">
                 <!-- Left Column: Camera Nodes List Table -->
                 <div>
                     <h3 style="font-size: 1.05rem; font-weight: 600; color: #ffffff; margin-bottom: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif;">Registered Broadcasters</h3>
@@ -174,7 +174,7 @@
                 </div>
 
                 <!-- Right Column: Add New Broadcaster Form -->
-                <div style="border-left: 1px solid #1a1a1a; padding-left: 4rem;">
+                <div class="admin-col-right">
                     <h3 style="font-size: 1.05rem; font-weight: 600; color: #ffffff; margin-bottom: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif;">Register New Camera Node</h3>
                     <form action="/admin/broadcaster/create" method="POST">
                         <div class="form-group" style="margin-bottom: 1rem;">
@@ -210,7 +210,7 @@
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem;">Modify root admin access configurations or execute global system purges</p>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1.6fr 1.2fr; gap: 4rem;">
+            <div class="admin-management-layout">
                 <!-- Left Column: Edit Admin Credentials Form -->
                 <div>
                     <h3 style="font-size: 1.05rem; font-weight: 600; color: #ffffff; margin-bottom: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif;">Modify Admin Account</h3>
@@ -219,7 +219,7 @@
                     <form action="/admin/credentials/update" method="POST">
                         <input type="hidden" name="id" value="{{.AdminUser.ID}}">
                         
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div class="admin-fields-grid">
                             <div class="form-group">
                                 <label class="form-label" for="admin_username" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Admin Username</label>
                                 <input class="form-input" type="text" id="admin_username" name="username" value="{{.AdminUser.Username}}" required style="padding: 0.6rem;">
@@ -240,7 +240,7 @@
                 </div>
 
                 <!-- Right Column: Danger Zone Purge -->
-                <div style="border-left: 1px solid #2a1111; padding-left: 4rem;">
+                <div class="admin-danger-right">
                     <h3 style="font-size: 1.05rem; font-weight: 600; color: #ff5555; margin-bottom: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif;">Danger Zone</h3>
                     
                     <div style="background-color: #120505; border: 1px solid #551111; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
