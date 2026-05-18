@@ -11,4 +11,5 @@ ON CONFLICT (email) DO NOTHING;
 -- Password: CameraNodeSecure1! (Node ID is auto-generated via UUID)
 -- Hashed automatically at database level using pgcrypto blowfish crypt
 INSERT INTO broadcasters (name, password_hash)
-VALUES ('Workspace Camera', crypt('CameraNodeSecure1!', gen_salt('bf')));
+VALUES ('Workspace Camera', crypt('CameraNodeSecure1!', gen_salt('bf')))
+ON CONFLICT (name) DO NOTHING;
