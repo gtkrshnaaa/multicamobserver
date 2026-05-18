@@ -3,6 +3,7 @@ package feature_test
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -162,5 +163,121 @@ func TestShowBroadcasterValidNodeID(t *testing.T) {
 	body := rr.Body.String()
 	if !strings.Contains(body, name) || !strings.Contains(body, "broadcaster-layout") {
 		t.Errorf("Expected rendered page to contain camera name and streaming controls")
+	}
+}
+
+// TestCreateBroadcaster verifies successful creation of a new broadcaster node
+func TestCreateBroadcaster(t *testing.T) {
+	ctrl, db := setupTestControllerWithDB(t)
+	if ctrl == nil {
+		return
+	}
+	defer db.Close()
+
+	formData := "name=Yard+Camera&password=YardSecurePassword2026!"
+	req := httptest.NewRequest("POST", "/admin/broadcaster/create", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+
+	ctrl.CreateBroadcaster(rr, req)
+
+	// Should redirect on success
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("Expected redirect status 303, got %d", rr.Code)
+	}
+
+	loc := rr.Header().Get("Location")
+	if !strings.Contains(loc, "success=") {
+		t.Errorf("Expected success query param in redirect URL, got %s", loc)
+	}
+
+	// Verify insertion in database
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM broadcasters WHERE name = 'Yard Camera'").Scan(&count)
+	if err != nil {
+		t.Fatalf("Failed to query database count: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("Expected exactly 1 broadcaster with name 'Yard Camera' to be created, got %d", count)
+	}
+
+	// Clean up
+	_, _ = db.Exec("DELETE FROM broadcasters WHERE name = 'Yard Camera'")
+}
+
+// TestUpdateBroadcaster checks dynamic editing of name and password parameters
+func TestUpdateBroadcaster(t *testing.T) {
+	ctrl, db := setupTestControllerWithDB(t)
+	if ctrl == nil {
+		return
+	}
+	defer db.Close()
+
+	// Insert test camera
+	var id int
+	err := db.QueryRow("INSERT INTO broadcasters (name, password_hash) VALUES ('Old Lobby Cam', 'dummyhash') RETURNING id").Scan(&id)
+	if err != nil {
+		t.Fatalf("Failed to insert mock camera: %v", err)
+	}
+	defer func() {
+		_, _ = db.Exec("DELETE FROM broadcasters WHERE id = $1", id)
+	}()
+
+	formData := fmt.Sprintf("id=%d&name=New+Lobby+Cam&password=LobbyPassUpdated1!", id)
+	req := httptest.NewRequest("POST", "/admin/broadcaster/update", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+
+	ctrl.UpdateBroadcaster(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("Expected status 303, got %d", rr.Code)
+	}
+
+	// Verify update in DB
+	var name string
+	err = db.QueryRow("SELECT name FROM broadcasters WHERE id = $1", id).Scan(&name)
+	if err != nil {
+		t.Fatalf("Failed to query broadcaster name: %v", err)
+	}
+	if name != "New Lobby Cam" {
+		t.Errorf("Expected updated name 'New Lobby Cam', got: %s", name)
+	}
+}
+
+// TestDeleteBroadcaster confirms deletion of camera nodes from database
+func TestDeleteBroadcaster(t *testing.T) {
+	ctrl, db := setupTestControllerWithDB(t)
+	if ctrl == nil {
+		return
+	}
+	defer db.Close()
+
+	// Insert test camera to delete
+	var id int
+	err := db.QueryRow("INSERT INTO broadcasters (name, password_hash) VALUES ('To Delete Cam', 'dummy') RETURNING id").Scan(&id)
+	if err != nil {
+		t.Fatalf("Failed to insert mock camera: %v", err)
+	}
+
+	formData := fmt.Sprintf("id=%d", id)
+	req := httptest.NewRequest("POST", "/admin/broadcaster/delete", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+
+	ctrl.DeleteBroadcaster(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("Expected status 303, got %d", rr.Code)
+	}
+
+	// Verify deleted from DB
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM broadcasters WHERE id = $1", id).Scan(&count)
+	if err != nil {
+		t.Fatalf("Failed to query count: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("Expected broadcaster to be deleted, but still found in DB")
 	}
 }
