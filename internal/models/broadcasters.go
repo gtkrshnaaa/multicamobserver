@@ -78,3 +78,48 @@ func GetAllBroadcasters(db *sql.DB) ([]*Broadcaster, error) {
 
 	return list, nil
 }
+
+// CreateBroadcaster registers a new physical camera broadcaster node securely
+func CreateBroadcaster(db *sql.DB, name, plainPassword string) (*Broadcaster, error) {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
+	row := db.QueryRow(
+		"INSERT INTO broadcasters (name, password_hash) VALUES ($1, $2) RETURNING id, node_id, name, created_at",
+		name, string(hashed),
+	)
+
+	var b Broadcaster
+	err = row.Scan(&b.ID, &b.NodeID, &b.Name, &b.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &b, nil
+}
+
+// UpdateBroadcaster updates camera node credentials dynamically
+func UpdateBroadcaster(db *sql.DB, id int, name, plainPassword string) error {
+	if plainPassword != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		_, err = db.Exec(
+			"UPDATE broadcasters SET name = $1, password_hash = $2 WHERE id = $3",
+			name, string(hashed), id,
+		)
+		return err
+	}
+
+	_, err := db.Exec("UPDATE broadcasters SET name = $1 WHERE id = $2", name, id)
+	return err
+}
+
+// DeleteBroadcaster removes a physical camera broadcaster node from the system
+func DeleteBroadcaster(db *sql.DB, id int) error {
+	_, err := db.Exec("DELETE FROM broadcasters WHERE id = $1", id)
+	return err
+}
