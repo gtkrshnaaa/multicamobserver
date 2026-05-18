@@ -106,6 +106,9 @@ func main() {
 
 	// Protected Admin Dashboard Route
 	mux.HandleFunc("/admin/dashboard", middleware.RequireAuth("admin", ctrl.JWTSecret, ctrl.ShowDashboard))
+	mux.HandleFunc("/admin/broadcaster/create", middleware.RequireAuth("admin", ctrl.JWTSecret, ctrl.CreateBroadcaster))
+	mux.HandleFunc("/admin/broadcaster/update", middleware.RequireAuth("admin", ctrl.JWTSecret, ctrl.UpdateBroadcaster))
+	mux.HandleFunc("/admin/broadcaster/delete", middleware.RequireAuth("admin", ctrl.JWTSecret, ctrl.DeleteBroadcaster))
 
 	// Protected Camera Node Route
 	mux.HandleFunc("/broadcaster/camera", middleware.RequireAuth("broadcaster", ctrl.JWTSecret, ctrl.ShowBroadcaster))
